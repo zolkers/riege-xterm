@@ -1,0 +1,14 @@
+[package]
+name = "riege_xterm"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "riege_xterm"
+crate-type = ["cdylib"]
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+crossterm = "0.29.0"
+ratatui = "0.29.0"
+anyhow = "1.0"
