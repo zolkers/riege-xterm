@@ -6,7 +6,8 @@ use crate::core::repl_new::{
     SHUTDOWN_SIGNAL,
     JAVA_INPUT_CALLBACK,
     JAVA_TAB_CALLBACK,
-    COMPLETION_CANDIDATES
+    COMPLETION_CANDIDATES,
+    Terminal
 };
 
 #[no_mangle]
@@ -89,5 +90,17 @@ pub extern "C" fn terminal_register_tab_callback(callback: NativeCallback) {
         Box::new(move |buffer| {
             unsafe { invoke_native_callback(RAW_TAB_CB, buffer); }
         })
+    });
+}
+
+#[no_mangle]
+pub extern "C" fn terminal_start() {
+    let runtime = tokio::runtime::Runtime::new().expect("Failed to create Tokio runtime");
+
+    runtime.block_on(async {
+        let mut terminal = Terminal::new();
+        if let Err(e) = terminal.run().await {
+            logger::error(&format!("Terminal error: {}", e));
+        }
     });
 }
