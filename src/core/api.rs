@@ -41,6 +41,26 @@ pub extern "C" fn terminal_log_success(msg: *const c_char) {
 }
 
 #[no_mangle]
+pub extern "C" fn terminal_log_warning(msg: *const c_char) {
+    if msg.is_null() { return; }
+    unsafe {
+        if let Ok(c_str) = CStr::from_ptr(msg).to_str() {
+            logger::warning(c_str);
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn terminal_log_debug(msg: *const c_char) {
+    if msg.is_null() { return; }
+    unsafe {
+        if let Ok(c_str) = CStr::from_ptr(msg).to_str() {
+            logger::debug(c_str);
+        }
+    }
+}
+
+#[no_mangle]
 pub extern "C" fn terminal_close() {
     SHUTDOWN_SIGNAL.store(true, Ordering::Relaxed);
 }
@@ -95,12 +115,30 @@ pub extern "C" fn terminal_register_tab_callback(callback: NativeCallback) {
 
 #[no_mangle]
 pub extern "C" fn terminal_start() {
-    let runtime = tokio::runtime::Runtime::new().expect("Failed to create Tokio runtime");
+    eprintln!("[RUST DEBUG] terminal_start() called");
 
+    let runtime = match tokio::runtime::Runtime::new() {
+        Ok(rt) => {
+            eprintln!("[RUST DEBUG] Tokio runtime created successfully");
+            rt
+        },
+        Err(e) => {
+            eprintln!("[RUST ERROR] Failed to create Tokio runtime: {}", e);
+            return;
+        }
+    };
+
+    eprintln!("[RUST DEBUG] Starting terminal in async block...");
     runtime.block_on(async {
+        eprintln!("[RUST DEBUG] Inside async block, creating Terminal");
         let mut terminal = Terminal::new();
-        if let Err(e) = terminal.run().await {
-            logger::error(&format!("Terminal error: {}", e));
+        eprintln!("[RUST DEBUG] Terminal created, calling run()");
+
+        match terminal.run().await {
+            Ok(_) => eprintln!("[RUST DEBUG] Terminal run() completed successfully"),
+            Err(e) => eprintln!("[RUST ERROR] Terminal error: {}", e),
         }
     });
+
+    eprintln!("[RUST DEBUG] terminal_start() ending");
 }

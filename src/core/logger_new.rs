@@ -40,3 +40,11 @@ pub fn error(message: &str) {
 pub fn success(message: &str) {
     with_logger(|l| l.success(message));
 }
+
+pub fn warning(message: &str) {
+    with_logger(|l| l.warning(message));
+}
+
+pub fn debug(message: &str) {
+    with_logger(|l| l.debug(message));
+}

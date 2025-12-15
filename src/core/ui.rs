@@ -3,6 +3,15 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
+
+struct Cleanup;
+
+impl Drop for Cleanup {
+    fn drop(&mut self) {
+        let _ = disable_raw_mode();
+        let _ = execute!(std::io::stdout(), LeaveAlternateScreen);
+    }
+}
 use ratatui::{
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},
@@ -49,12 +58,22 @@ fn parse_message_type(msg: &str) -> (String, Color) {
         (msg.trim_start_matches("[RUST6]").to_string(), Color::Rgb(136, 68, 0))
     } else if msg.starts_with("[RUST7]") {
         (msg.trim_start_matches("[RUST7]").to_string(), Color::Rgb(119, 51, 0))
-    } else if msg.starts_with("[ERROR]") {
+    } else if msg.starts_with("[ERROR]") || msg.starts_with("✗") {
         (msg.to_string(), Color::Red)
     } else if msg.starts_with("[✓]") || msg.starts_with("[SUCCESS]") {
         (msg.to_string(), Color::Green)
-    } else if msg.starts_with("[INFO]") {
+    } else if msg.starts_with("[INFO]") || msg.starts_with("ℹ") {
         (msg.to_string(), Color::Cyan)
+    } else if msg.starts_with("[WARNING]") || msg.starts_with("⚠") {
+        (msg.to_string(), Color::Yellow)
+    } else if msg.starts_with("[DEBUG]") {
+        (msg.to_string(), Color::Magenta)
+    } else if msg.starts_with("Username:") || msg.starts_with("UUID:") {
+        (msg.to_string(), Color::LightBlue)
+    } else if msg.starts_with("Connecting") || msg.starts_with("Starting") {
+        (msg.to_string(), Color::LightGreen)
+    } else if msg.starts_with("Waiting") || msg.starts_with("Loading") {
+        (msg.to_string(), Color::LightYellow)
     } else {
         (msg.to_string(), Color::White)
     }
@@ -111,7 +130,10 @@ impl TerminalUI {
         let backend = CrosstermBackend::new(stdout);
         let mut terminal = Terminal::new(backend)?;
 
+        // Ensure cleanup happens even on panic
+        let cleanup = Cleanup;
         let result = self.run_loop(&mut terminal, &mut on_command, &mut on_autocomplete).await;
+        drop(cleanup);
 
         disable_raw_mode()?;
         execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
@@ -343,5 +365,13 @@ impl MessageLogger {
 
     pub fn success(&self, message: &str) {
         self.log(format!("[SUCCESS] {}", message));
+    }
+
+    pub fn warning(&self, message: &str) {
+        self.log(format!("[WARNING] {}", message));
+    }
+
+    pub fn debug(&self, message: &str) {
+        self.log(format!("[DEBUG] {}", message));
     }
 }
