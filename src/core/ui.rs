@@ -307,9 +307,9 @@ impl TerminalUI {
             .collect();
 
         let title = if clamped_scroll > 0 {
-            format!("Rusty Terminal (↑{})", clamped_scroll)
+            format!("R-Term (↑{})", clamped_scroll)
         } else {
-            "Rusty Terminal".to_string()
+            "R-Term".to_string()
         };
 
         let messages_list = List::new(items)
@@ -349,10 +349,22 @@ pub struct MessageLogger {
 impl MessageLogger {
     pub fn log(&self, message: String) {
         let mut msgs = self.messages.lock().unwrap();
-        if msgs.len() >= MAX_MESSAGES {
-            msgs.pop_front();
+
+        // Split multi-line messages into separate entries
+        for line in message.lines() {
+            if msgs.len() >= MAX_MESSAGES {
+                msgs.pop_front();
+            }
+            msgs.push_back(line.to_string());
         }
-        msgs.push_back(message);
+
+        // Handle empty messages (like blank lines)
+        if message.is_empty() || message == "\n" {
+            if msgs.len() >= MAX_MESSAGES {
+                msgs.pop_front();
+            }
+            msgs.push_back(String::new());
+        }
     }
 
     pub fn info(&self, message: &str) {

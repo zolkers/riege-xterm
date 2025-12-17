@@ -25,7 +25,7 @@ impl Terminal {
 
         self.add_banner(&logger);
         eprintln!("[RUST DEBUG] Banner added");
-        ui.set_prompt("rusty > ".to_string());
+        ui.set_prompt("rmc > ".to_string());
         eprintln!("[RUST DEBUG] Prompt set, calling ui.run()");
 
         ui.run(
